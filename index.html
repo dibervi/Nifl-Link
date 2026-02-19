@@ -221,16 +221,15 @@
       });
     }
 
-    function handleNewPeer(peerId, call = null) {
-      if (peers[peerId]) return;
-      peers[peerId] = {name: "?", call, isTalking: false};
-      if (!call) {
-        const outgoing = myPeer.call(peerId, myStream);
-        outgoing.on('stream', () => {});
-        peers[peerId].call = outgoing;
-      }
-      updatePeersList();
-    }
+    function handleNewPeer(peerId, call = null) 
+      if (call) {
+  call.on('stream', remoteStream => {
+    console.log("Přišel zvuk od", peerId);
+    const audio = document.getElementById('remoteAudios');
+    audio.srcObject = remoteStream;
+    audio.play().catch(err => console.error("Audio chyba:", err));
+  });
+}
 
     function updatePeersList() {
       const div = document.getElementById("peers");
