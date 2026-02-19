@@ -2,6 +2,7 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Nifl-Link</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
@@ -12,95 +13,67 @@
       --fire: #ff8800;
     }
 
-    body {
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
+    body, html {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
       background-color: var(--bg);
       color: #e0e0e0;
       font-family: "Segoe UI", sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative;
     }
 
-    /* FILMOVÉ ZRNO (ŠUM) */
+    /* MATRIX RUNOVÝ DÉŠŤ */
+    #matrixCanvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0; opacity: 0.15;
+    }
+
     .grain {
-      position: fixed;
-      top: -50%; left: -50%; width: 200%; height: 200%;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: url('https://grainy-gradients.vercel.app/noise.svg');
-      opacity: 0.05;
-      pointer-events: none;
-      z-index: 10;
-      animation: noise 0.2s infinite;
-    }
-
-    @keyframes noise {
-      0% { transform: translate(0,0) }
-      10% { transform: translate(-1%,-1%) }
-      20% { transform: translate(-2%,1%) }
-      30% { transform: translate(1%,-2%) }
-      40% { transform: translate(-1%,1%) }
-      100% { transform: translate(0,0) }
+      opacity: 0.04; pointer-events: none; z-index: 10;
     }
 
     /* VIGNETACE */
     body::after {
-      content: "";
-      position: absolute;
-      inset: 0;
+      content: ""; position: absolute; inset: 0;
       background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.9) 100%);
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    /* MLHA S PARALAXOU */
-    #fog {
-      position: absolute;
-      width: 120%; height: 120%;
-      background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 60%);
-      z-index: 1;
-      pointer-events: none;
+      pointer-events: none; z-index: 5;
     }
 
     h1 {
       position: absolute;
-      top: 50px;
-      font-size: 32px;
-      letter-spacing: 10px;
-      color: #333;
-      z-index: 6;
+      top: 5vh; /* Responzivní horní okraj */
+      font-size: clamp(20px, 6vw, 32px); /* Přizpůsobí se mobilu i PC */
+      letter-spacing: 0.5em;
+      color: #333; z-index: 6; margin: 0;
     }
-
     h1 span { color: var(--gold); }
 
     .stars-container {
       position: relative;
-      width: 500px; height: 500px;
+      width: 85vmin; height: 85vmin; /* Vždy se vejde do obrazovky */
       display: flex; align-items: center; justify-content: center;
       z-index: 4;
+      transition: transform 0.1s ease-out;
     }
 
     .star {
       position: absolute;
-      font-size: 38px;
+      font-size: clamp(18px, 5vmin, 38px);
       color: var(--rune-stone);
-      transition: color 0.3s, text-shadow 0.3s;
+      transition: all 0.3s ease;
       user-select: none;
     }
 
     @keyframes breathe {
-      0%, 100% { opacity: 0.5; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.05); color: #d4b475; }
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); color: #8a6d3b; }
     }
 
-    .star.active {
-      color: var(--gold);
-      animation: breathe 5s ease-in-out infinite;
-    }
+    .star.active { color: var(--gold); animation: breathe 5s infinite; }
 
     .star.speaking {
       animation: none !important;
@@ -112,45 +85,34 @@
 
     .center-button {
       z-index: 10;
-      width: 130px; height: 130px;
-      font-size: 50px;
+      width: 25vmin; height: 25vmin;
+      max-width: 130px; max-height: 130px;
+      font-size: clamp(30px, 8vmin, 50px);
       background: linear-gradient(145deg, #bd9b5d, #8a6d3b);
       color: #1a1a1a;
       border: none; border-radius: 50%;
       cursor: pointer;
       box-shadow: 0 0 30px rgba(0,0,0,0.5);
-      transition: transform 0.2s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+      display: flex; align-items: center; justify-content: center;
     }
-
-    .center-button:active { transform: scale(0.9); }
 
     #ui-panel {
-      display: none;
-      z-index: 6;
-      margin-top: 30px;
-      text-align: center;
-      background: rgba(0,0,0,0.6);
-      padding: 20px;
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
+      display: none; position: absolute; bottom: 8vh;
+      z-index: 7; text-align: center;
+      background: rgba(0,0,0,0.8); padding: 15px;
+      border-radius: 20px; backdrop-filter: blur(10px);
       border: 1px solid rgba(189,155,93,0.2);
+      width: 80%; max-width: 400px;
     }
 
-    input {
-      background: #111; border: 1px solid #444; color: white;
-      padding: 10px; border-radius: 10px; margin: 10px;
-    }
-
-    button#connectBtn {
-      background: var(--gold); border: none; padding: 10px 20px;
-      border-radius: 10px; cursor: pointer; font-weight: bold;
-    }
+    input { background: #111; border: 1px solid #444; color: white; padding: 8px; border-radius: 10px; width: 60%; }
+    button#connectBtn { background: var(--gold); border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
 
+  <canvas id="matrixCanvas"></canvas>
   <div class="grain"></div>
-  <div id="fog"></div>
 
   <h1>NIFL-<span>LINK</span></h1>
 
@@ -159,48 +121,63 @@
   </div>
 
   <div id="ui-panel">
-    <div style="margin-bottom:10px">Tvoje místo: <span id="myNameDisplay" style="color:var(--gold); font-weight:bold"></span></div>
-    <input type="text" id="remoteIdInput" placeholder="Zadej Jméno-PIN">
+    <div style="font-size: 0.9em; margin-bottom: 5px;">Tvé místo: <span id="myNameDisplay" style="color:var(--gold)"></span></div>
+    <input type="text" id="remoteIdInput" placeholder="Jméno-PIN">
     <button id="connectBtn">PROPOJIT</button>
   </div>
 
   <script>
     const runes = ["ᚫ", "ᚱ", "ᚷ", "ᛞ", "ᛗ", "ᛟ", "ᚹ", "ᚻ", "ᚾ", "ᛁ", "ᛃ", "ᛒ"];
     const gods = ["ODIN", "THOR", "LOKI", "FREYA", "TYR", "BALDER", "HEIMDALL", "VIDAR", "VALI", "ULLR", "MAGNI", "MODI"];
-    
     let mySeat = -1;
-    let myPeer, myStream;
-    let occupiedCount = 0;
+    let isSpeaking = false;
 
-    // AUDIO: KLADIVO NA KOVADLINU (Syntéza)
+    // --- MATRIX EFEKT ---
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+    let columns;
+    let drops = [];
+
+    function initMatrix() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = Math.floor(canvas.width / 20);
+      drops = Array(columns).fill(1);
+    }
+    initMatrix();
+    window.addEventListener('resize', initMatrix);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(10, 10, 10, 0.1)"; // Postupné mizení stop
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Pokud mluvíš, barva run v Matrixu zezlátne a zrychlí se
+      ctx.fillStyle = isSpeaking ? "#bd9b5d" : "#222"; 
+      ctx.font = "15px Arial";
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = runes[Math.floor(Math.random() * runes.length)];
+        ctx.fillText(text, i * 20, drops[i] * 20);
+        
+        if (drops[i] * 20 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i] += isSpeaking ? 2 : 1; // Rychlejší pád při mluvení
+      }
+    }
+    setInterval(drawMatrix, 50);
+
+    // --- AUDIO & LOGIKA ---
     function playHammerSound() {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'triangle'; 
-      osc.frequency.setValueAtTime(1200, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.4);
-      
-      gain.gain.setValueAtTime(0.5, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start();
-      osc.stop(ctx.currentTime + 0.4);
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.3);
     }
 
-    // PARALAXNÍ EFEKT
-    document.addEventListener('mousemove', (e) => {
-      const x = (window.innerWidth / 2 - e.pageX) / 50;
-      const y = (window.innerHeight / 2 - e.pageY) / 50;
-      document.getElementById('starsContainer').style.transform = `translate(${x}px, ${y}px)`;
-      document.getElementById('fog').style.transform = `translate(${-x*2}px, ${-y*2}px)`;
-    });
-
-    // GENEROVÁNÍ KRUHU
     const container = document.getElementById('starsContainer');
     for (let i = 0; i < 12; i++) {
       const runeDiv = document.createElement('div');
@@ -209,80 +186,55 @@
       runeDiv.textContent = runes[i];
       const angle = (i * 360) / 12 - 90;
       const rad = angle * Math.PI / 180;
-      runeDiv.style.left = `calc(50% + ${Math.cos(rad)*190}px - 20px)`;
-      runeDiv.style.top = `calc(50% + ${Math.sin(rad)*190}px - 20px)`;
+      // Použití vmin pro responzivní poloměr
+      runeDiv.style.left = `calc(50% + ${Math.cos(rad) * 35}vmin - 10px)`;
+      runeDiv.style.top = `calc(50% + ${Math.sin(rad) * 35}vmin - 10px)`;
       container.appendChild(runeDiv);
     }
 
-    // START
     document.getElementById('startBtn').addEventListener('click', async () => {
       playHammerSound();
       try {
-        myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        // Generování Historického Jména-PINu
-        const randomGod = gods[Math.floor(Math.random() * gods.length)];
-        const randomPin = Math.floor(1000 + Math.random() * 9000);
-        const myCustomId = `${randomGod}-${randomPin}`;
-
-        myPeer = new Peer(myCustomId);
+        const myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const myCustomId = `${gods[Math.floor(Math.random()*gods.length)]}-${Math.floor(1000+Math.random()*9000)}`;
+        const myPeer = new Peer(myCustomId);
 
         myPeer.on('open', (id) => {
           document.getElementById('startBtn').style.display = "none";
           document.getElementById('ui-panel').style.display = "block";
           document.getElementById('myNameDisplay').textContent = id;
-          occupySeat();
-          startVoiceDetection(myStream);
+          mySeat = 0; // Pro zjednodušení v prototypu
+          document.getElementById('star-0').classList.add('active');
+          
+          // Audio analyzer
+          const aCtx = new AudioContext();
+          const analyser = aCtx.createAnalyser();
+          aCtx.createMediaStreamSource(myStream).connect(analyser);
+          const data = new Uint8Array(analyser.frequencyBinCount);
+          function loop() {
+            analyser.getByteFrequencyData(data);
+            let avg = data.reduce((a,b)=>a+b)/data.length;
+            isSpeaking = avg > 15;
+            const s = document.getElementById('star-0');
+            if (isSpeaking) s.classList.add('speaking'); else s.classList.remove('speaking');
+            requestAnimationFrame(loop);
+          }
+          loop();
         });
 
         myPeer.on('call', call => {
           call.answer(myStream);
-          setupCall(call);
+          call.on('stream', s => { const a = new Audio(); a.srcObject=s; a.play(); });
         });
 
-      } catch(e) { alert("Chybí přístup k hlasu."); }
+      } catch(e) { alert("Mikrofon!"); }
     });
 
-    function startVoiceDetection(stream) {
-      const ctx = new AudioContext();
-      const analyser = ctx.createAnalyser();
-      ctx.createMediaStreamSource(stream).connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      function check() {
-        analyser.getByteFrequencyData(data);
-        let avg = data.reduce((a, b) => a + b) / data.length;
-        const s = document.getElementById('star-' + mySeat);
-        if (avg > 15) s.classList.add('speaking');
-        else s.classList.remove('speaking');
-        requestAnimationFrame(check);
-      }
-      check();
-    }
-
-    function occupySeat() {
-      if (occupiedCount < 12) {
-        if (mySeat === -1) mySeat = occupiedCount;
-        document.getElementById('star-' + occupiedCount).classList.add('active');
-        occupiedCount++;
-      }
-    }
-
-    document.getElementById('connectBtn').addEventListener('click', () => {
-      playHammerSound();
-      const rId = document.getElementById('remoteIdInput').value.toUpperCase();
-      if(rId) {
-        const call = myPeer.call(rId, myStream);
-        setupCall(call);
-      }
+    document.addEventListener('mousemove', (e) => {
+      const x = (window.innerWidth / 2 - e.pageX) / 40;
+      const y = (window.innerHeight / 2 - e.pageY) / 40;
+      container.style.transform = `translate(${x}px, ${y}px)`;
     });
-
-    function setupCall(call) {
-      occupySeat();
-      call.on('stream', stream => {
-        const aud = document.createElement('audio');
-        aud.srcObject = stream; aud.play();
-      });
-    }
   </script>
 </body>
 </html>
