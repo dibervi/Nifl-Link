@@ -61,7 +61,7 @@
       caret-color: #e0ffff;
       font-size: 16px;
       outline: none;
-      z-index: 10;
+      z-index: 20;
       cursor: text;
     }
     #nameInput:focus { outline: none; }
@@ -86,12 +86,12 @@
 
   <h2>NiflLink</h2>
 
-  <div class="input-container">
+  <div class="input-container" onclick="document.getElementById('nameInput').focus()">
     <svg id="rune-stone" viewBox="0 0 260 140">
       <text id="rune-name" x="130" y="75" font-size="28" fill="#e0ffff" text-anchor="middle" font-family="serif"></text>
       <g id="rune-circle"></g>
     </svg>
-    <input id="nameInput" placeholder="Klikni sem a napiš jméno" value="" autocomplete="off" autocorrect="off">
+    <input id="nameInput" placeholder="Klikni sem a napiš jméno / Nick" value="" autocomplete="off" autocorrect="off">
   </div>
 
   <button class="connect" onclick="connect()">
