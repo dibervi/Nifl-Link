@@ -8,36 +8,79 @@
   <style>
     :root { --gold: #bd9b5d; --bg: #0a0a0a; --rune-stone: #222; --fire: #ff8800; }
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: var(--bg); color: #e0e0e0; font-family: "Segoe UI", sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+    
     #matrixCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.12; pointer-events: none; }
     .grain { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.04; pointer-events: none; z-index: 10; }
     body::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.9) 100%); pointer-events: none; z-index: 5; }
-    h1 { position: absolute; top: 5vh; font-size: clamp(20px, 6vw, 32px); letter-spacing: 0.5em; color: #333; z-index: 6; margin: 0; text-transform: uppercase; }
+    
+    h1 { position: absolute; top: 5vh; font-size: clamp(18px, 5vw, 28px); letter-spacing: 0.5em; color: #333; z-index: 6; margin: 0; text-transform: uppercase; }
     h1 span { color: var(--gold); }
-    .stars-container { position: relative; width: 85vmin; height: 85vmin; display: flex; align-items: center; justify-content: center; z-index: 4; }
-    .star { position: absolute; font-size: clamp(18px, 5vmin, 38px); color: var(--rune-stone); transition: all 0.3s ease; user-select: none; }
+
+    .stars-container { position: relative; width: 90vmin; height: 90vmin; display: flex; align-items: center; justify-content: center; z-index: 4; }
+
+    /* RUNY */
+    .star { position: absolute; font-size: clamp(18px, 5vmin, 38px); color: var(--rune-stone); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); user-select: none; }
     .star::after { content: attr(data-name); position: absolute; top: 120%; left: 50%; transform: translateX(-50%); font-size: 10px; letter-spacing: 1px; color: var(--gold); opacity: 0; transition: opacity 0.4s ease; white-space: nowrap; }
     .star.active { color: var(--gold); animation: breathe 5s infinite; }
     .star.active::after { opacity: 1; }
+    
     @keyframes breathe { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } }
     .star.speaking { animation: none !important; color: var(--fire) !important; text-shadow: 0 0 15px var(--fire); transform: scale(1.4) !important; opacity: 1 !important; z-index: 100; }
-    .center-button { z-index: 10; width: 25vmin; height: 25vmin; max-width: 130px; max-height: 130px; font-size: clamp(30px, 8vmin, 50px); background: linear-gradient(145deg, #bd9b5d, #8a6d3b); color: #1a1a1a; border: none; border-radius: 50%; cursor: pointer; box-shadow: 0 0 30px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
-    #ui-panel { display: none; position: absolute; bottom: 8vh; z-index: 7; text-align: center; background: rgba(0,0,0,0.85); padding: 20px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(189,155,93,0.3); width: 85%; max-width: 400px; }
-    input { background: #111; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; width: 80%; outline: none; margin-bottom: 15px; text-align: center; font-family: monospace; }
-    button#connectBtn { background: var(--gold); border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; color: #1a1a1a; width: 80%; text-transform: uppercase; letter-spacing: 2px; }
-  </style>
+
+    /* STŘEDOVÝ PANEL - KRUHOVÝ */
+    #ui-panel {
+      position: absolute;
+      width: 45vmin; height: 45vmin;
+      max-width: 280px; max-height: 280px;
+      background: rgba(15, 15, 15, 0.9);
+      backdrop-filter: blur(15px);
+      border: 2px solid rgba(189,155,93,0.3);
+      border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 10;
+      transition: all 0.8s ease;
+      box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(189,155,93,0.1);
+      padding: 20px; box-sizing: border-box;
+      text-align: center;
+    }
+
+    .ui-hidden { opacity: 0; transform: scale(0.5); pointer-events: none; }
+
+    input { 
+      background: transparent; border: none; border-bottom: 1px solid var(--gold); 
+      color: white; padding: 10px; width: 70%; outline: none; 
+      margin-bottom: 15px; text-align: center; font-family: monospace; font-size: 20px; letter-spacing: 5px;
+    }
+    
+    button#connectBtn { 
+      background: var(--gold); border: none; padding: 10px 20px; 
+      border-radius: 20px; cursor: pointer; font-weight: bold; color: #1a1a1a; 
+      font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s;
+    }
+    button#connectBtn:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--gold); }
+
+    .center-button {
+      width: 25vmin; height: 25vmin; max-width: 130px; max-height: 130px;
+      font-size: clamp(30px, 8vmin, 50px); background: linear-gradient(145deg, #bd9b5d, #8a6d3b);
+      color: #1a1a1a; border: none; border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; z-index: 11;
+    }
+  </script>
 </head>
 <body>
   <canvas id="matrixCanvas"></canvas>
   <div class="grain"></div>
   <h1>NIFL-<span>LINK</span></h1>
+  
   <div class="stars-container" id="starsContainer">
     <button class="center-button" id="startBtn">ᚫ</button>
-  </div>
-  <div id="ui-panel">
-    <div style="font-size: 0.7em; margin-bottom: 5px; letter-spacing: 2px; color: #666;">AKTIVNÍ SNĚM</div>
-    <div id="myNameDisplay" style="color:var(--gold); font-weight:bold; font-size: 2em; margin-bottom: 15px; letter-spacing: 5px;"></div>
-    <input type="tel" id="remoteIdInput" placeholder="ZADEJ PIN" maxlength="4" style="font-size: 24px; letter-spacing: 8px;">
-    <button id="connectBtn">Vstoupit na Bifröst</button>
+
+    <div id="ui-panel" class="ui-hidden">
+      <div style="font-size: 0.6em; margin-bottom: 5px; letter-spacing: 2px; color: #666;">TVŮJ PIN</div>
+      <div id="myNameDisplay" style="color:var(--gold); font-weight:bold; font-size: 1.8em; margin-bottom: 15px; letter-spacing: 5px;"></div>
+      <input type="tel" id="remoteIdInput" placeholder="PIN" maxlength="4">
+      <button id="connectBtn">Vstoupit</button>
+    </div>
   </div>
 
   <script>
@@ -66,17 +109,17 @@
     }
     setInterval(drawMatrix, 60);
 
-    // --- LAYOUT ---
+    // --- LAYOUT RUN ---
     for (let i = 0; i < 12; i++) {
       const r = document.createElement('div');
       r.className = 'star'; r.id = 'star-' + i; r.textContent = runes[i];
       const angle = (i * 360 / 12 - 90) * Math.PI / 180;
-      r.style.left = `calc(50% + ${Math.cos(angle)*35}vmin - 10px)`;
-      r.style.top = `calc(50% + ${Math.sin(angle)*35}vmin - 10px)`;
+      r.style.left = `calc(50% + ${Math.cos(angle)*38}vmin - 10px)`;
+      r.style.top = `calc(50% + ${Math.sin(angle)*38}vmin - 10px)`;
       document.getElementById('starsContainer').appendChild(r);
     }
 
-    // --- CORE LOGIC ---
+    // --- LOGIKA ---
     document.getElementById('startBtn').onclick = async () => {
       try {
         myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -87,7 +130,8 @@
         
         myPeer.on('open', id => {
           document.getElementById('startBtn').style.display = "none";
-          document.getElementById('ui-panel').style.display = "block";
+          const panel = document.getElementById('ui-panel');
+          panel.classList.remove('ui-hidden');
           document.getElementById('myNameDisplay').textContent = id;
           updateStar(0, 'TY ('+id+')', true);
           attachVoice(myStream, 0);
@@ -99,16 +143,19 @@
         });
 
         myPeer.on('disconnected', () => myPeer.reconnect());
-      } catch(e) { alert("Mikrofon je nezbytný pro vstup do sněmu."); }
+      } catch(e) { alert("Mikrofon je nezbytný."); }
     };
 
     function handleCall(call) {
       call.on('stream', stream => {
         if (!activePeers.has(call.peer)) {
           const seat = activePeers.size + 1;
-          activePeers.set(call.peer, { seat, stream });
+          activePeers.set(call.peer, { seat });
           updateStar(seat, 'HOST ('+call.peer+')', true);
           
+          // Pokud jsme se právě někam připojili (jsme klienti), schováme panel
+          document.getElementById('ui-panel').classList.add('ui-hidden');
+
           let a = document.getElementById('audio-' + call.peer) || document.createElement('audio');
           a.id = 'audio-' + call.peer; a.autoplay = true; a.srcObject = stream;
           a.setAttribute('playsinline', 'true');
@@ -116,16 +163,18 @@
           attachVoice(stream, seat);
         }
       });
-      call.on('close', () => removePeer(call.peer));
+      call.on('close', () => {
+        removePeer(call.peer);
+        // Pokud nezbyl nikdo, můžeme panel zase ukázat (volitelné)
+        if (activePeers.size === 0) document.getElementById('ui-panel').classList.remove('ui-hidden');
+      });
     }
 
     document.getElementById('connectBtn').onclick = () => {
       const val = document.getElementById('remoteIdInput').value;
       if(val && val !== myPeer.id) {
-        document.getElementById('connectBtn').textContent = "PŘIPOJOVÁNÍ...";
         const call = myPeer.call(val, myStream);
         handleCall(call);
-        setTimeout(() => document.getElementById('connectBtn').textContent = "Vstoupit na Bifröst", 2000);
       }
     };
 
