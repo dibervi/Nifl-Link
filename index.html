@@ -66,19 +66,21 @@
     #kickModal.show { display: flex; }
     #kickModal .modal-content {
       background: rgba(15,15,15,0.98); border: 3px solid var(--gold);
-      border-radius: 25px; padding: 35px 25px; width: 88%; max-width: 340px;
+      border-radius: 25px; padding: 35px 25px; width: 88%; max-width: 360px;
       text-align: center; box-shadow: 0 0 80px rgba(189,155,93,0.5);
     }
     #kickModal .rune { font-size: 52px; color: var(--gold); margin-bottom: 8px; animation: breathe 3s infinite; }
     #kickModal h2 { color: #e0e0e0; margin: 0 0 8px; font-size: 1.45em; letter-spacing: 3px; }
     #kickModal #kickName { color: var(--gold); font-size: 1.65em; font-weight: bold; letter-spacing: 3px; margin: 15px 0 25px; }
-    .kick-buttons { display: flex; gap: 16px; justify-content: center; }
+    .kick-buttons { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .kick-buttons .row { display: flex; gap: 10px; }
     .kick-buttons button {
-      padding: 14px 34px; border: none; border-radius: 30px; font-weight: bold;
-      cursor: pointer; font-size: 0.95em; transition: 0.3s;
+      padding: 12px 24px; border: none; border-radius: 30px; font-weight: bold;
+      cursor: pointer; font-size: 0.85em; transition: 0.3s;
     }
     #kickCancel { background: #333; color: #ddd; }
     #kickConfirm { background: #9f2a2a; color: white; }
+    #voteStartBtn { background: var(--gold); color: #1a1a1a; width: 100%; }
   </style>
 </head>
 <body>
@@ -100,11 +102,14 @@
   <div id="kickModal">
     <div class="modal-content">
       <div class="rune">ᛉ</div>
-      <h2>VYHNAT ZE SNĚMU</h2>
+      <h2>SNĚMOVNÍ SOUD</h2>
       <div id="kickName"></div>
       <div class="kick-buttons">
-        <button id="kickCancel">Zrušit</button>
-        <button id="kickConfirm">VYHNAT</button>
+        <button id="voteStartBtn">VYZVAT K HLASOVÁNÍ</button>
+        <div class="row">
+          <button id="kickCancel">Zrušit</button>
+          <button id="kickConfirm">VYHNAT</button>
+        </div>
       </div>
     </div>
   </div>
@@ -133,7 +138,7 @@
       return null;
     }
 
-    // MATRIX 
+    // MATRIX
     const canvas = document.getElementById('matrixCanvas');
     const ctx = canvas.getContext('2d');
     let columns, drops;
@@ -153,7 +158,7 @@
     }
     setInterval(drawMatrix, 60);
 
-    // KULATÝ STŮL
+    // STAR RENDER
     for (let i = 0; i < 12; i++) {
       const r = document.createElement('div');
       r.className = 'star'; r.id = 'star-' + i; r.textContent = runes[i];
@@ -163,6 +168,7 @@
       document.getElementById('starsContainer').appendChild(r);
     }
 
+    // MODAL LOGIC
     document.querySelectorAll('.star').forEach(star => {
       star.style.cursor = 'pointer';
       star.addEventListener('click', () => {
@@ -176,6 +182,15 @@
     });
 
     document.getElementById('kickCancel').onclick = () => document.getElementById('kickModal').classList.remove('show');
+    
+    document.getElementById('voteStartBtn').onclick = () => {
+      if (!isHost || currentKickSeat === null) return;
+      dataConns.forEach(conn => {
+        if (conn.open) conn.send({ type: 'vote_invite', seat: currentKickSeat });
+      });
+      alert("Sněm byl vyzván k hlasování!");
+    };
+
     document.getElementById('kickConfirm').onclick = () => {
       if (currentKickSeat !== null) {
         kickPeer(currentKickSeat);
@@ -205,10 +220,9 @@
       if (!isHost || seat === 0) return;
       const peerId = seatToPeer.get(seat);
       if (!peerId) return;
-      const conn = dataConns.get(peerId);
-      if (conn) {
-        conn.send({type: 'kicked'}); // Řekneme mu, že končí
-        setTimeout(() => conn.close(), 500);
+      if (dataConns.has(peerId)) {
+          dataConns.get(peerId).send({type: 'kicked'});
+          setTimeout(() => dataConns.get(peerId).close(), 500);
       }
       removePeer(peerId);
     }
@@ -218,6 +232,23 @@
         alert("Byl jsi vyhoštěn ze sněmu!");
         location.reload();
       }
+
+      if (data.type === 'vote_invite') {
+        if (confirm("Souhlasíš s vyhoštěním " + runeNames[data.seat] + "?")) {
+          dataConns.get(senderId).send({ type: 'visual_vote' });
+        }
+      }
+
+      if (data.type === 'visual_vote') {
+        const voterSeat = activePeers.get(senderId)?.seat;
+        const el = document.getElementById('star-' + voterSeat);
+        if (el) {
+          el.style.color = "var(--fire)";
+          el.style.textShadow = "0 0 20px var(--fire)";
+          setTimeout(() => { el.style.color = ""; el.style.textShadow = ""; }, 5000);
+        }
+      }
+
       if (data.type === 'join' && isHost) {
         if (!activePeers.has(senderId)) {
           const seat = getFirstFreeSeat();
