@@ -12,7 +12,7 @@
     h1.main-title { position: absolute; top: 5vh; font-size: clamp(16px, 4vw, 24px); letter-spacing: 0.5em; color: #222; z-index: 6; margin: 0; text-transform: uppercase; pointer-events: none; }
     h1.main-title span { color: var(--gold); }
     .stars-container { position: relative; width: 85vmin; height: 85vmin; display: flex; align-items: center; justify-content: center; z-index: 4; }
-    #centerBtn { width: 20vmin; height: 20vmin; max-width: 100px; max-height: 100px; font-size: clamp(30px, 8vmin, 50px); background: radial-gradient(circle, #bd9b5d, #8a6d3b); color: #111; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 150; box-shadow: 0 0 30px rgba(189,155,93,0.3); transition: 0.5s; }
+    #centerBtn { width: 20vmin; height: 20vmin; max-width: 100px; max-height: 100px; font-size: clamp(30px, 8vmin, 50px); background: radial-gradient(circle, #bd9b5d, #8a6d3b); color: #111; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 150; box-shadow: 0 0 30px rgba(189,155,93,0.3); transition: 0.5s; outline: none; }
     #centerBtn.locked { background: #441111; color: #ff4444 !important; border: 2px solid #ff0000; box-shadow: 0 0 20px #ff0000; }
     #centerBtn.active-room { background: #111; color: var(--gold); border: 1px solid var(--gold); }
     .star { position: absolute; font-size: clamp(25px, 7vmin, 45px); color: #1a1a1a; transition: color 0.5s, transform 0.2s, filter 0.5s; user-select: none; opacity: 0.5; }
@@ -56,18 +56,33 @@
   const centerBtn = document.getElementById('centerBtn');
   const uiPanel = document.getElementById('ui-panel');
 
-  // První interakce - aktivace mikrofonu a menu
+  // Funkce pro vynucené probuzení audio kontextu (klíč k Safari/Chrome)
+  async function unlockAudio() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+  }
+
   centerBtn.onclick = async () => {
-    if (myPeer) { if(isHost) toggleLock(); return; }
+    await unlockAudio(); // Probuzení zvuku při každém kliku
+
+    if (myPeer) { 
+      if(isHost) toggleLock(); 
+      return; 
+    }
+
     try {
-      // Vylepšené snímání zvuku (Echo Cancellation)
       myStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
       centerBtn.classList.add('hidden');
       uiPanel.classList.remove('hidden');
-      if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } catch(e) { alert("Mikrofon je pro sněm nutný."); }
+    } catch(e) { 
+      alert("Pro vstup je nutné povolit mikrofon."); 
+    }
   };
 
   function toggleLock() {
@@ -76,13 +91,16 @@
     centerBtn.textContent = isLocked ? "ᚦ" : "ᛟ";
   }
 
-  document.getElementById('btnCreate').onclick = () => {
+  document.getElementById('btnCreate').onclick = async () => {
+    await unlockAudio();
     const id = document.getElementById('roomInput').value.trim().toLowerCase();
     if (id.length < 3) return;
     isHost = true;
     myPeer = new Peer(id);
     myPeer.on('open', startSession);
-    myPeer.on('error', (err) => { if (err.type === 'id-taken') { alert("Tato místnost již existuje!"); location.reload(); }});
+    myPeer.on('error', (err) => { 
+      if (err.type === 'id-taken') { alert("Název už existuje!"); location.reload(); }
+    });
     myPeer.on('connection', (conn) => {
       if (isLocked) {
         centerBtn.style.boxShadow = "0 0 50px #ff0000";
@@ -94,10 +112,14 @@
       setTimeout(() => conn.send({type: 'peer-list', peers: peerList}), 1000);
       setupConnection(conn);
     });
-    myPeer.on('call', (call) => { call.answer(myStream); handleCall(call); });
+    myPeer.on('call', (call) => { 
+      call.answer(myStream); 
+      handleCall(call); 
+    });
   };
 
-  document.getElementById('btnJoin').onclick = () => {
+  document.getElementById('btnJoin').onclick = async () => {
+    await unlockAudio();
     const roomName = document.getElementById('roomInput').value.trim().toLowerCase();
     if (!roomName) return;
     myPeer = new Peer();
@@ -107,7 +129,10 @@
       startSession();
     });
     myPeer.on('connection', setupConnection);
-    myPeer.on('call', (call) => { call.answer(myStream); handleCall(call); });
+    myPeer.on('call', (call) => { 
+      call.answer(myStream); 
+      handleCall(call); 
+    });
   };
 
   function startSession() {
@@ -121,7 +146,7 @@
     conn.on('open', () => connections.set(conn.peer, conn));
     conn.on('data', data => {
       if (data.type === 'speech') triggerRandomRune(data.color);
-      if (data.type === 'locked') { alert("Sněm je zamčen."); location.reload(); }
+      if (data.type === 'locked') { alert("Místnost je zamčena."); location.reload(); }
       if (data.type === 'peer-list') {
         data.peers.forEach(peerId => {
           if (!connections.has(peerId)) {
@@ -135,17 +160,18 @@
     conn.on('close', () => connections.delete(conn.peer));
   }
 
-  // Opravené přehrávání - aby prohlížeče zvuk nezahazovaly
   function handleCall(call) {
     call.on('stream', remoteStream => {
-      const audio = new Audio();
+      let audio = document.getElementById('audio-' + call.peer);
+      if (!audio) {
+        audio = document.createElement('audio');
+        audio.id = 'audio-' + call.peer;
+        document.body.appendChild(audio);
+      }
       audio.srcObject = remoteStream;
       audio.onloadedmetadata = () => {
-        audio.play().catch(e => console.error("Audio Playback Error:", e));
+        audio.play().catch(console.error);
       };
-      // Neviditelně připojíme do stránky (některé prohlížeče to vyžadují)
-      audio.style.display = "none";
-      document.body.appendChild(audio);
     });
   }
 
@@ -173,11 +199,13 @@
     if (avail.length > 0) {
       const t = avail[Math.floor(Math.random() * avail.length)];
       t.style.color = color; t.classList.add('glow');
-      setTimeout(() => { t.classList.remove('glow'); setTimeout(() => { if(!t.classList.contains('glow')) t.style.color = ''; }, 400); }, 250);
+      setTimeout(() => { 
+        t.classList.remove('glow'); 
+        setTimeout(() => { if(!t.classList.contains('glow')) t.style.color = ''; }, 400); 
+      }, 250);
     }
   }
 
-  // Matrix animace na pozadí
   const canvas = document.getElementById('matrixCanvas');
   const ctx = canvas.getContext('2d');
   const initM = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
