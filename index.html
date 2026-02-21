@@ -56,14 +56,18 @@
   const centerBtn = document.getElementById('centerBtn');
   const uiPanel = document.getElementById('ui-panel');
 
+  // První interakce - aktivace mikrofonu a menu
   centerBtn.onclick = async () => {
     if (myPeer) { if(isHost) toggleLock(); return; }
     try {
-      myStream = await navigator.mediaDevices.getUserMedia({audio: true});
+      // Vylepšené snímání zvuku (Echo Cancellation)
+      myStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
       centerBtn.classList.add('hidden');
       uiPanel.classList.remove('hidden');
       if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } catch(e) { alert("Mikrofon nutný."); }
+    } catch(e) { alert("Mikrofon je pro sněm nutný."); }
   };
 
   function toggleLock() {
@@ -78,7 +82,7 @@
     isHost = true;
     myPeer = new Peer(id);
     myPeer.on('open', startSession);
-    myPeer.on('error', (err) => { if (err.type === 'id-taken') { alert("Již existuje!"); location.reload(); }});
+    myPeer.on('error', (err) => { if (err.type === 'id-taken') { alert("Tato místnost již existuje!"); location.reload(); }});
     myPeer.on('connection', (conn) => {
       if (isLocked) {
         centerBtn.style.boxShadow = "0 0 50px #ff0000";
@@ -86,7 +90,6 @@
         setTimeout(() => conn.send({type: 'locked'}), 500);
         return;
       }
-      // Hostitel pošle nováčkovi seznam všech aktuálně připojených
       const peerList = Array.from(connections.keys());
       setTimeout(() => conn.send({type: 'peer-list', peers: peerList}), 1000);
       setupConnection(conn);
@@ -118,8 +121,7 @@
     conn.on('open', () => connections.set(conn.peer, conn));
     conn.on('data', data => {
       if (data.type === 'speech') triggerRandomRune(data.color);
-      if (data.type === 'locked') { alert("Zamčeno."); location.reload(); }
-      // Klient dostal seznam ostatních od hostitele -> všechny je obvolá
+      if (data.type === 'locked') { alert("Sněm je zamčen."); location.reload(); }
       if (data.type === 'peer-list') {
         data.peers.forEach(peerId => {
           if (!connections.has(peerId)) {
@@ -133,8 +135,18 @@
     conn.on('close', () => connections.delete(conn.peer));
   }
 
+  // Opravené přehrávání - aby prohlížeče zvuk nezahazovaly
   function handleCall(call) {
-    call.on('stream', s => { const a = new Audio(); a.srcObject = s; a.play(); });
+    call.on('stream', remoteStream => {
+      const audio = new Audio();
+      audio.srcObject = remoteStream;
+      audio.onloadedmetadata = () => {
+        audio.play().catch(e => console.error("Audio Playback Error:", e));
+      };
+      // Neviditelně připojíme do stránky (některé prohlížeče to vyžadují)
+      audio.style.display = "none";
+      document.body.appendChild(audio);
+    });
   }
 
   function startAudioAnalysis() {
@@ -165,7 +177,7 @@
     }
   }
 
-  // Matrix
+  // Matrix animace na pozadí
   const canvas = document.getElementById('matrixCanvas');
   const ctx = canvas.getContext('2d');
   const initM = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
