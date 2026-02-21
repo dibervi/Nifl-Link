@@ -7,247 +7,179 @@
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root { --gold: #bd9b5d; --bg: #050505; }
-    
-    body, html { 
-      margin: 0; padding: 0; width: 100%; height: 100%; 
-      background-color: var(--bg); color: #e0e0e0; 
-      font-family: "Segoe UI", sans-serif; 
-      display: flex; align-items: center; justify-content: center; 
-      overflow: hidden; 
-    }
-
-    #matrixCanvas { 
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      z-index: 0; opacity: 0.15; pointer-events: none; 
-    }
-    
-    /* Kruh a runy */
-    .stars-container { 
-      position: relative; width: 85vmin; height: 85vmin; 
-      display: flex; align-items: center; justify-content: center; 
-      z-index: 4; 
-    }
-
-    .star { 
-      position: absolute; 
-      font-size: clamp(25px, 7vmin, 45px); 
-      color: #1a1a1a; 
-      transition: color 0.8s ease-out, transform 0.3s ease-out, filter 0.8s ease-out; 
-      user-select: none;
-      opacity: 0.5;
-    }
-    
-    /* Magický efekt záření (Glow) */
-    .star.glow { 
-      transform: scale(1.5) translateY(-5px);
-      opacity: 1 !important;
-      z-index: 10;
-      filter: 
-        drop-shadow(0 0 5px currentColor) 
-        drop-shadow(0 0 15px currentColor)
-        drop-shadow(0 0 30px currentColor);
-    }
-
-    /* UI Panel */
-    #ui-panel { 
-      position: absolute; width: 300px; 
-      background: rgba(5, 5, 5, 0.95); 
-      backdrop-filter: blur(20px); 
-      border: 1px solid var(--gold); 
-      border-radius: 25px; padding: 40px; 
-      text-align: center; z-index: 100; 
-      box-shadow: 0 0 60px rgba(0,0,0,1); 
-    }
-
-    input { 
-      background: transparent; border: none; 
-      border-bottom: 2px solid var(--gold); 
-      color: white; padding: 12px; width: 90%; 
-      outline: none; margin-bottom: 25px; 
-      text-align: center; font-family: monospace; 
-      font-size: 20px; letter-spacing: 2px;
-    }
-
-    button { 
-      background: var(--gold); border: none; 
-      padding: 15px; border-radius: 30px; 
-      cursor: pointer; font-weight: bold; 
-      width: 100%; margin: 8px 0; 
-      text-transform: uppercase; transition: 0.4s;
-      letter-spacing: 1px;
-    }
-
-    button:hover { background: #fff; transform: translateY(-2px); }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: var(--bg); color: #e0e0e0; font-family: "Segoe UI", sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #matrixCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.15; pointer-events: none; }
+    h1.main-title { position: absolute; top: 5vh; font-size: clamp(16px, 4vw, 24px); letter-spacing: 0.5em; color: #222; z-index: 6; margin: 0; text-transform: uppercase; pointer-events: none; }
+    h1.main-title span { color: var(--gold); }
+    .stars-container { position: relative; width: 85vmin; height: 85vmin; display: flex; align-items: center; justify-content: center; z-index: 4; }
+    #centerBtn { width: 20vmin; height: 20vmin; max-width: 100px; max-height: 100px; font-size: clamp(30px, 8vmin, 50px); background: radial-gradient(circle, #bd9b5d, #8a6d3b); color: #111; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 150; box-shadow: 0 0 30px rgba(189,155,93,0.3); transition: 0.5s; }
+    #centerBtn.locked { background: #441111; color: #ff4444 !important; border: 2px solid #ff0000; box-shadow: 0 0 20px #ff0000; }
+    #centerBtn.active-room { background: #111; color: var(--gold); border: 1px solid var(--gold); }
+    .star { position: absolute; font-size: clamp(25px, 7vmin, 45px); color: #1a1a1a; transition: color 0.5s, transform 0.2s, filter 0.5s; user-select: none; opacity: 0.5; }
+    .star.glow { transform: scale(1.2); opacity: 1 !important; z-index: 10; filter: drop-shadow(0 0 10px currentColor); }
+    #ui-panel { position: absolute; width: 280px; background: rgba(5, 5, 5, 0.98); backdrop-filter: blur(20px); border: 1px solid var(--gold); border-radius: 25px; padding: 30px; text-align: center; z-index: 200; box-shadow: 0 0 100px #000; }
+    input { background: transparent; border: none; border-bottom: 2px solid var(--gold); color: white; padding: 10px; width: 90%; outline: none; margin-bottom: 20px; text-align: center; font-family: monospace; font-size: 18px; }
+    button.menu-btn { background: var(--gold); border: none; padding: 12px; border-radius: 25px; cursor: pointer; font-weight: bold; width: 100%; margin: 5px 0; text-transform: uppercase; transition: 0.3s; }
     .hidden { display: none !important; }
-    #status { position: fixed; bottom: 20px; font-size: 11px; color: var(--gold); letter-spacing: 3px; opacity: 0.7; }
   </style>
 </head>
 <body>
-
   <canvas id="matrixCanvas"></canvas>
-  
-  <div class="stars-container" id="starsContainer">
-    </div>
-
-  <div id="ui-panel">
-    <h1 style="color:var(--gold); margin:0 0 20px 0; letter-spacing:6px; font-size: 22px;">NIFL-LINK</h1>
+  <h1 class="main-title">NIFL-<span>LINK</span></h1>
+  <div class="stars-container" id="starsContainer"><button id="centerBtn">ᛟ</button></div>
+  <div id="ui-panel" class="hidden">
     <input type="text" id="roomInput" placeholder="NÁZEV SNĚMU" maxlength="15">
-    <button id="btnCreate">Vytvořit Sněm</button>
-    <button id="btnJoin">Připojit se</button>
-    <p style="font-size: 10px; opacity: 0.5; margin-top: 20px;">VSTUPTE DO KRUHU</p>
+    <button class="menu-btn" id="btnCreate">VYTVOŘIT SNĚM</button>
+    <button class="menu-btn" id="btnJoin">PŘIPOJIT SE</button>
   </div>
 
-  <div id="status">ODPOJENO</div>
-
 <script>
-  // Rituální paleta: Zlato, Oheň, Polární záře, Led
-  const runes = ["ᚫ", "ᚱ", "ᚷ", "ᛞ", "ᛗ", "ᛟ", "ᚹ", "ᚻ", "ᚾ", "ᛁ", "ᛃ", "ᛒ", "ᛏ", "ᛖ", "ᛚ", "ᛯ", "ᚦ", "ᚪ", "ᚳ", "ᛇ", "ᛉ", "ᛋ", "ᚠ", "ᚢ"];
-  const colors = [
-    '#FFD700', // Zlatá
-    '#B22222', // Temně červená
-    '#00FA9A', // Polární zelená
-    '#40E0D0', // Tyrkysová
-    '#87CEEB', // Ledově modrá
-    '#DAA520', // Staré zlato
-    '#FF4500'  // Oheň
-  ];
-  
+  const runes = ["ᚫ", "ᚱ", "ᚷ", "ᛞ", "ᛗ", "ᛟ", "ᚹ", "ᚻ", "ᚾ", "ᛁ", "ᛃ", "ᛒ"];
+  const colors = ['#FFD700', '#B22222', '#00FA9A', '#40E0D0', '#87CEEB', '#DAA520', '#FF4500'];
   const myColor = colors[Math.floor(Math.random() * colors.length)];
-  let myPeer, myStream, audioContext;
-  let connections = [];
+  let myPeer, myStream, audioContext, isHost = false, isLocked = false;
+  let connections = new Map();
+  let lastTrigger = 0;
 
-  // 1. Generování rituálního kruhu (24 run)
+  const stars = [];
   const container = document.getElementById('starsContainer');
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 12; i++) {
     const r = document.createElement('div');
-    r.className = 'star';
-    r.textContent = runes[i];
-    const angle = (i * 360 / 24 - 90) * Math.PI / 180;
+    r.className = 'star'; r.textContent = runes[i];
+    const angle = (i * 360 / 12 - 90) * Math.PI / 180;
     r.style.left = `calc(50% + ${Math.cos(angle)*38}vmin - 15px)`;
     r.style.top = `calc(50% + ${Math.sin(angle)*38}vmin - 15px)`;
     container.appendChild(r);
+    stars.push(r);
   }
-  const stars = document.querySelectorAll('.star');
 
-  // 2. Audio Analýza a odesílání hlasových pulsů
-  async function startAudioAnalysis(stream, color) {
-    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioContext.state === 'suspended') await audioContext.resume();
+  const centerBtn = document.getElementById('centerBtn');
+  const uiPanel = document.getElementById('ui-panel');
 
-    const source = audioContext.createMediaStreamSource(stream);
+  centerBtn.onclick = async () => {
+    if (myPeer) { if(isHost) toggleLock(); return; }
+    try {
+      myStream = await navigator.mediaDevices.getUserMedia({audio: true});
+      centerBtn.classList.add('hidden');
+      uiPanel.classList.remove('hidden');
+      if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) { alert("Mikrofon nutný."); }
+  };
+
+  function toggleLock() {
+    isLocked = !isLocked;
+    centerBtn.classList.toggle('locked', isLocked);
+    centerBtn.textContent = isLocked ? "ᚦ" : "ᛟ";
+  }
+
+  document.getElementById('btnCreate').onclick = () => {
+    const id = document.getElementById('roomInput').value.trim().toLowerCase();
+    if (id.length < 3) return;
+    isHost = true;
+    myPeer = new Peer(id);
+    myPeer.on('open', startSession);
+    myPeer.on('error', (err) => { if (err.type === 'id-taken') { alert("Již existuje!"); location.reload(); }});
+    myPeer.on('connection', (conn) => {
+      if (isLocked) {
+        centerBtn.style.boxShadow = "0 0 50px #ff0000";
+        setTimeout(() => centerBtn.style.boxShadow = "", 1000);
+        setTimeout(() => conn.send({type: 'locked'}), 500);
+        return;
+      }
+      // Hostitel pošle nováčkovi seznam všech aktuálně připojených
+      const peerList = Array.from(connections.keys());
+      setTimeout(() => conn.send({type: 'peer-list', peers: peerList}), 1000);
+      setupConnection(conn);
+    });
+    myPeer.on('call', (call) => { call.answer(myStream); handleCall(call); });
+  };
+
+  document.getElementById('btnJoin').onclick = () => {
+    const roomName = document.getElementById('roomInput').value.trim().toLowerCase();
+    if (!roomName) return;
+    myPeer = new Peer();
+    myPeer.on('open', () => {
+      const conn = myPeer.connect(roomName);
+      setupConnection(conn);
+      startSession();
+    });
+    myPeer.on('connection', setupConnection);
+    myPeer.on('call', (call) => { call.answer(myStream); handleCall(call); });
+  };
+
+  function startSession() {
+    uiPanel.classList.add('hidden');
+    centerBtn.classList.remove('hidden');
+    centerBtn.classList.add('active-room');
+    startAudioAnalysis();
+  }
+
+  function setupConnection(conn) {
+    conn.on('open', () => connections.set(conn.peer, conn));
+    conn.on('data', data => {
+      if (data.type === 'speech') triggerRandomRune(data.color);
+      if (data.type === 'locked') { alert("Zamčeno."); location.reload(); }
+      // Klient dostal seznam ostatních od hostitele -> všechny je obvolá
+      if (data.type === 'peer-list') {
+        data.peers.forEach(peerId => {
+          if (!connections.has(peerId)) {
+            const newConn = myPeer.connect(peerId);
+            setupConnection(newConn);
+            myPeer.call(peerId, myStream);
+          }
+        });
+      }
+    });
+    conn.on('close', () => connections.delete(conn.peer));
+  }
+
+  function handleCall(call) {
+    call.on('stream', s => { const a = new Audio(); a.srcObject = s; a.play(); });
+  }
+
+  function startAudioAnalysis() {
+    const source = audioContext.createMediaStreamSource(myStream);
     const analyser = audioContext.createAnalyser();
     source.connect(analyser);
     analyser.fftSize = 256;
     const data = new Uint8Array(analyser.frequencyBinCount);
-
-    function check() {
+    const check = () => {
       analyser.getByteFrequencyData(data);
-      let sum = 0; for(let i=0; i<data.length; i++) sum += data[i];
-      let volume = sum / data.length;
-
-      if (volume > 15) { 
-        triggerRandomRune(color);
-        connections.forEach(conn => {
-            if(conn.open) conn.send({type: 'speech', color: color});
-        });
+      let vol = data.reduce((a,b) => a+b) / data.length;
+      if (vol > 25 && Date.now() - lastTrigger > 400) {
+        triggerRandomRune(myColor);
+        lastTrigger = Date.now();
+        connections.forEach(c => { if(c.open) c.send({type: 'speech', color: myColor}); });
       }
       requestAnimationFrame(check);
-    }
+    };
     check();
   }
 
-  // Funkce pro magické rozsvícení runy
   function triggerRandomRune(color) {
-    const availableStars = Array.from(stars).filter(s => !s.classList.contains('glow'));
-    if (availableStars.length > 0) {
-        const target = availableStars[Math.floor(Math.random() * availableStars.length)];
-        target.style.color = color;
-        target.classList.add('glow');
-
-        setTimeout(() => {
-            target.classList.remove('glow');
-            setTimeout(() => { 
-                if(!target.classList.contains('glow')) target.style.color = ''; 
-            }, 800);
-        }, 500);
+    const avail = stars.filter(s => !s.classList.contains('glow'));
+    if (avail.length > 0) {
+      const t = avail[Math.floor(Math.random() * avail.length)];
+      t.style.color = color; t.classList.add('glow');
+      setTimeout(() => { t.classList.remove('glow'); setTimeout(() => { if(!t.classList.contains('glow')) t.style.color = ''; }, 400); }, 250);
     }
   }
 
-  // 3. Síťová logika (PeerJS)
-  const ui = document.getElementById('ui-panel');
-  const statusEl = document.getElementById('status');
-
-  async function initMedia() {
-    try {
-      myStream = await navigator.mediaDevices.getUserMedia({audio: true});
-      ui.classList.add('hidden');
-      statusEl.innerText = "SNĚM AKTIVNÍ";
-      startAudioAnalysis(myStream, myColor);
-    } catch(e) { alert("Vstup vyžaduje mikrofon."); }
-  }
-
-  document.getElementById('btnCreate').onclick = async () => {
-    const id = document.getElementById('roomInput').value.trim().toLowerCase();
-    if (id.length < 3) return alert("Název musí mít aspoň 3 znaky.");
-    await initMedia();
-    myPeer = new Peer(id);
-    setupPeerListeners();
-  };
-
-  document.getElementById('btnJoin').onclick = async () => {
-    const id = document.getElementById('roomInput').value.trim().toLowerCase();
-    if (!id) return alert("Zadej název sněmu.");
-    await initMedia();
-    myPeer = new Peer();
-    myPeer.on('open', () => {
-        const conn = myPeer.connect(id);
-        const call = myPeer.call(id, myStream);
-        handleNewConnection(conn);
-        handleCall(call);
-    });
-    setupPeerListeners();
-  };
-
-  function setupPeerListeners() {
-    myPeer.on('connection', handleNewConnection);
-    myPeer.on('call', handleCall);
-    myPeer.on('error', err => { console.error(err); statusEl.innerText = "CHYBA SPOJENÍ"; });
-  }
-
-  function handleNewConnection(conn) {
-    connections.push(conn);
-    conn.on('data', data => {
-      if (data.type === 'speech') triggerRandomRune(data.color);
-    });
-  }
-
-  function handleCall(call) {
-    call.answer(myStream);
-    call.on('stream', remoteStream => {
-      const audio = new Audio();
-      audio.srcObject = remoteStream;
-      audio.play();
-    });
-  }
-
-  // Matrix pozadí s runami
+  // Matrix
   const canvas = document.getElementById('matrixCanvas');
   const ctx = canvas.getContext('2d');
-  function initMatrix() {
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-  }
-  initMatrix(); window.onresize = initMatrix;
+  const initM = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+  initM(); window.onresize = initM;
   let drops = Array(Math.floor(canvas.width/20)).fill(1);
-  function drawMatrix() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  setInterval(() => {
+    ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = "#0a0a0a"; ctx.font = "15px monospace";
     drops.forEach((y, i) => {
       ctx.fillText(runes[Math.floor(Math.random()*runes.length)], i*20, y*20);
-      if(y*20 > canvas.height && Math.random() > 0.985) drops[i] = 0;
+      if(y*20 > canvas.height && Math.random() > 0.98) drops[i] = 0;
       drops[i]++;
     });
-  }
-  setInterval(drawMatrix, 60);
+  }, 60);
 </script>
 </body>
 </html>
